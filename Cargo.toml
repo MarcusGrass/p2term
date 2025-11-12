@@ -1,0 +1,14 @@
+[workspace]
+members = ["p2termd","p2term-lib", "p2term"]
+resolver = "3"
+
+[workspace.dependencies]
+
+p2term-lib = { path = "./p2term-lib"}
+
+anyhow = "1.0.100"
+clap = { version = "4.5.51", features = ["derive", "env"] }
+iroh = "0.95.1"
+portable-pty = "0.9.0"
+termion = "4.0.5"
+tokio = { version = "1.48.0", features = ["rt-multi-thread", "macros", "process", "io-util", "time", "sync"] }

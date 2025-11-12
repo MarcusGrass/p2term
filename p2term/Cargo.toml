@@ -1,0 +1,12 @@
+[package]
+name = "p2term"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+p2term-lib = { workspace = true }
+anyhow = { workspace = true }
+clap = { workspace = true }
+portable-pty = { workspace = true }
+termion = { workspace = true }
+tokio = { workspace = true }
