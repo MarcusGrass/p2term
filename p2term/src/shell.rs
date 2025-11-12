@@ -1,13 +1,9 @@
 use crate::pty::{PtyReader, PtyWriter, subshell_pty_task};
 use anyhow::Context;
-use portable_pty::{CommandBuilder, PtySize};
-use std::fs::copy;
 use std::io::Read;
 use std::io::{Stdout, Write};
-use std::process::Stdio;
 use std::time::Duration;
 use termion::raw::{IntoRawMode, RawTerminal};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 pub async fn shell_proxy() -> anyhow::Result<()> {
     let shell = std::env::var("SHELL").unwrap_or_else(|_| {
