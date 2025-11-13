@@ -1,11 +1,15 @@
-use crate::pty::{PtyReader, PtyWriter, subshell_pty_task};
 use anyhow::Context;
 use std::io::Read;
 use std::io::{Stdout, Write};
 use std::time::Duration;
 use termion::raw::{IntoRawMode, RawTerminal};
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
-pub async fn shell_proxy() -> anyhow::Result<()> {
+pub async fn shell_proxy<R, W>(input_stream: R, output_stream: W) -> anyhow::Result<()>
+where
+    R: AsyncRead + Unpin,
+    W: AsyncWrite + Unpin,
+{
     let shell = std::env::var("SHELL").unwrap_or_else(|_| {
         eprintln!("SHELL not set, defaulting to /bin/bash");
         "/bin/bash".to_string()
@@ -15,17 +19,16 @@ pub async fn shell_proxy() -> anyhow::Result<()> {
         .into_raw_mode()
         .context("Failed to enter raw mode")?;
 
-    let (pty_write, pty_read) = subshell_pty_task(&shell)?;
     tokio::try_join!(
-        proxy_child_stdin(pty_write, termion::async_stdin()),
-        proxy_child_stdout(pty_read, term_raw)
+        proxy_child_stdin(termion::async_stdin(), output_stream),
+        proxy_child_stdout(input_stream, term_raw)
     )?;
     Ok(())
 }
 
-async fn proxy_child_stdin(
-    child_stdin: PtyWriter,
+async fn proxy_child_stdin<W: AsyncWrite + Unpin>(
     mut this_stdin: termion::AsyncReader,
+    mut writer: W,
 ) -> anyhow::Result<()> {
     let mut buf = [0u8; 4096];
     loop {
@@ -36,20 +39,30 @@ async fn proxy_child_stdin(
             anyhow::bail!("Ctrl-C detected, exiting...\r");
         }
         if read_bytes > 0 {
-            child_stdin.write_chunk(&buf[..read_bytes])?;
+            writer
+                .write_all(&buf[..read_bytes])
+                .await
+                .context("failed to write bytes from term over stream")?;
         } else {
             tokio::time::sleep(Duration::from_millis(10)).await;
         }
     }
 }
 
-async fn proxy_child_stdout(
-    mut pty_reader: PtyReader,
+async fn proxy_child_stdout<R: AsyncRead + Unpin>(
+    mut reader: R,
     mut stdout_raw: RawTerminal<Stdout>,
 ) -> anyhow::Result<()> {
+    let mut buf = [0u8; 4096];
     loop {
-        let next = pty_reader.read_bytes().await?;
-        stdout_raw.write_all(&next)?;
+        let read_bytes = reader
+            .read(&mut buf)
+            .await
+            .context("failed to read bytes from stream")?;
+        if read_bytes == 0 {
+            println!("received EOF");
+        }
+        stdout_raw.write_all(&buf[..read_bytes])?;
         stdout_raw.flush()?;
     }
 }

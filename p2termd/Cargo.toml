@@ -10,8 +10,10 @@ p2term-lib = { workspace = true }
 anyhow = { workspace = true }
 clap = { workspace = true }
 iroh = { workspace = true }
+portable-pty = { workspace = true }
 rustc-hash = { workspace = true }
 serde = { workspace = true }
+termion = { workspace = true }
 tokio = { workspace = true }
 toml = { workspace = true }
 tracing = { workspace = true }

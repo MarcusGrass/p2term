@@ -1,4 +1,6 @@
 mod config;
+pub(crate) mod proto;
+mod shell;
 mod termd;
 
 use crate::termd::termd;

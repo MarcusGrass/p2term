@@ -18,6 +18,16 @@ pub enum P2TermdAccess {
     AllowedNodes(FxHashSet<PublicKey>),
 }
 
+impl P2TermdAccess {
+    #[must_use]
+    pub fn is_allowed(&self, peer: &PublicKey) -> bool {
+        match self {
+            Self::Any => true,
+            Self::AllowedNodes(allowed) => allowed.contains(peer),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct P2TermdCfg {
     pub secret_key: SecretKey,
