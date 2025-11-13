@@ -10,7 +10,7 @@ pub async fn shell_proxy() -> anyhow::Result<()> {
         eprintln!("SHELL not set, defaulting to /bin/bash");
         "/bin/bash".to_string()
     });
-    eprintln!("Spawning shell: {}", shell);
+    eprintln!("Spawning shell: {shell}");
     let term_raw = std::io::stdout()
         .into_raw_mode()
         .context("Failed to enter raw mode")?;

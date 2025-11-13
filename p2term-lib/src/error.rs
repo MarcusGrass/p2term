@@ -13,7 +13,7 @@ impl core::fmt::Display for ErrFmt<'_> {
         f.write_fmt(format_args!("{}", self.0))?;
         let mut src = self.0.source();
         while let Some(e) = src {
-            f.write_fmt(format_args!(" -> {}", e))?;
+            f.write_fmt(format_args!(" -> {e}"))?;
             src = e.source();
         }
         Ok(())

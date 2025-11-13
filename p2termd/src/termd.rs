@@ -1,8 +1,6 @@
-use crate::Args;
-use anyhow::Context;
-use iroh::SecretKey;
-use iroh::discovery::dns::DnsDiscovery;
 use crate::config::P2TermdCfg;
+use anyhow::Context;
+use iroh::discovery::dns::DnsDiscovery;
 
 pub(super) async fn termd(config: P2TermdCfg) -> anyhow::Result<()> {
     let ep = iroh::Endpoint::builder()

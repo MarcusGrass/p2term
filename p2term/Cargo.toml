@@ -11,3 +11,6 @@ clap = { workspace = true }
 portable-pty = { workspace = true }
 termion = { workspace = true }
 tokio = { workspace = true }
+
+[lints]
+workspace = true

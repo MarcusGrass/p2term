@@ -9,3 +9,6 @@ hex = { workspace = true }
 iroh-base = { workspace = true }
 rand_core = { workspace = true }
 rand_chacha = { workspace = true }
+
+[lints]
+workspace = true

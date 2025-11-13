@@ -61,13 +61,13 @@ pub fn subshell_pty_task(shell: &str) -> anyhow::Result<(PtyWriter, PtyReader)> 
         .context("failed to take pty writer")?;
     let (input_to_pty, bytes_to_pty) = std::sync::mpsc::sync_channel(128);
     std::thread::spawn(move || {
-        if let Err(e) = subshell_writer_task(bytes_to_pty, writer) {
+        if let Err(e) = subshell_writer_task(&bytes_to_pty, writer) {
             eprintln!("Error in subshell writer thread: {}", unpack(&*e));
         }
     });
     let (pty_sender, pty_bytes_recv) = tokio::sync::mpsc::channel(128);
     std::thread::spawn(move || {
-        if let Err(e) = subshell_reader_task(pty_sender, reader) {
+        if let Err(e) = subshell_reader_task(&pty_sender, reader) {
             eprintln!("Error in subshell reader thread: {}", unpack(&*e));
         }
     });
@@ -80,7 +80,7 @@ pub fn subshell_pty_task(shell: &str) -> anyhow::Result<(PtyWriter, PtyReader)> 
 }
 
 fn subshell_writer_task(
-    input: std::sync::mpsc::Receiver<ShellMessage>,
+    input: &std::sync::mpsc::Receiver<ShellMessage>,
     mut writer: Box<dyn Write + Send>,
 ) -> anyhow::Result<()> {
     loop {
@@ -90,14 +90,14 @@ fn subshell_writer_task(
         match msg {
             ShellMessage::Byte(b) => writer.write_all(&[b]).context("failed to write to pty")?,
             ShellMessage::Chunk(chunk) => {
-                writer.write_all(&chunk).context("failed to write to pty")?
+                writer.write_all(&chunk).context("failed to write to pty")?;
             }
         }
     }
 }
 
 fn subshell_reader_task(
-    output: tokio::sync::mpsc::Sender<Vec<u8>>,
+    output: &tokio::sync::mpsc::Sender<Vec<u8>>,
     mut reader: Box<dyn Read + Send>,
 ) -> anyhow::Result<()> {
     let mut buf = [0u8; 4096];
