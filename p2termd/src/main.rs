@@ -1,8 +1,10 @@
 mod config;
+mod observability;
 pub(crate) mod proto;
 mod shell;
 mod termd;
 
+use crate::observability::setup_observability;
 use crate::termd::termd;
 use anyhow::Context;
 use clap::Parser;
@@ -19,7 +21,7 @@ pub struct Args {
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
-    tracing_subscriber::fmt::init();
+    setup_observability();
     run(args).await.unwrap();
 }
 
