@@ -1,29 +1,36 @@
 use anyhow::Context;
+use p2term_lib::client::shell_proxy::ClientShellProxy;
+use p2term_lib::connection::{ReadStream, WriteStream};
 use std::io::Read;
 use std::io::{Stdout, Write};
 use std::time::Duration;
 use termion::raw::{IntoRawMode, RawTerminal};
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
-pub async fn shell_proxy<R, W>(input_stream: R, output_stream: W) -> anyhow::Result<()>
-where
-    R: AsyncRead + Unpin,
-    W: AsyncWrite + Unpin,
-{
-    let shell = std::env::var("SHELL").unwrap_or_else(|_| {
-        eprintln!("SHELL not set, defaulting to /bin/bash");
-        "/bin/bash".to_string()
-    });
-    eprintln!("Spawning shell: {shell}");
-    let term_raw = std::io::stdout()
-        .into_raw_mode()
-        .context("Failed to enter raw mode")?;
+#[derive(Debug)]
+pub struct ShellProxy;
 
-    tokio::try_join!(
-        proxy_child_stdin(termion::async_stdin(), output_stream),
-        proxy_child_stdout(input_stream, term_raw)
-    )?;
-    Ok(())
+impl ClientShellProxy for ShellProxy {
+    async fn run<W, R>(write: W, read: R) -> anyhow::Result<()>
+    where
+        W: WriteStream,
+        R: ReadStream,
+    {
+        let shell = std::env::var("SHELL").unwrap_or_else(|_| {
+            eprintln!("SHELL not set, defaulting to /bin/bash");
+            "/bin/bash".to_string()
+        });
+        eprintln!("Spawning shell: {shell}");
+        let term_raw = std::io::stdout()
+            .into_raw_mode()
+            .context("Failed to enter raw mode")?;
+
+        tokio::try_join!(
+            proxy_child_stdin(termion::async_stdin(), write),
+            proxy_child_stdout(read, term_raw)
+        )?;
+        Ok(())
+    }
 }
 
 async fn proxy_child_stdin<W: AsyncWrite + Unpin>(

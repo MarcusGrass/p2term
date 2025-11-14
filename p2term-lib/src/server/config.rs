@@ -1,7 +1,7 @@
+use crate::convert::HexConvert;
+use crate::crypto::{any_secret_key, generate_secret_key};
 use anyhow::Context;
 use iroh::{PublicKey, SecretKey};
-use p2term_lib::convert::HexConvert;
-use p2term_lib::crypto::{any_secret_key, generate_secret_key};
 use rustc_hash::FxHashSet;
 use std::path::PathBuf;
 

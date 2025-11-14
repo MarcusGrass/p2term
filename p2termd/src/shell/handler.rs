@@ -1,25 +1,32 @@
 use crate::shell::pty::{PtyReader, PtyWriter, subshell_pty_task};
 use anyhow::Context;
-use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
+use p2term_lib::connection::{ReadStream, WriteStream};
+use p2term_lib::server::shell_proxy::ServerShellProxy;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-pub async fn shell_proxy<R, W>(input_stream: R, output_stream: W) -> anyhow::Result<()>
-where
-    R: AsyncRead + Unpin,
-    W: AsyncWrite + Unpin,
-{
-    let shell = std::env::var("SHELL").unwrap_or_else(|_| {
-        eprintln!("SHELL not set, defaulting to /bin/bash");
-        "/bin/bash".to_string()
-    });
-    let (pty_write, pty_read) = subshell_pty_task(&shell)?;
-    tokio::try_join!(
-        proxy_child_stdin(pty_write, input_stream),
-        proxy_child_stdout(pty_read, output_stream)
-    )?;
-    Ok(())
+#[derive(Debug)]
+pub struct ShellProxyImpl;
+
+impl ServerShellProxy for ShellProxyImpl {
+    async fn run<W, R>(output_stream: W, input_stream: R) -> anyhow::Result<()>
+    where
+        W: WriteStream,
+        R: ReadStream,
+    {
+        let shell = std::env::var("SHELL").unwrap_or_else(|_| {
+            eprintln!("SHELL not set, defaulting to /bin/bash");
+            "/bin/bash".to_string()
+        });
+        let (pty_write, pty_read) = subshell_pty_task(&shell)?;
+        tokio::try_join!(
+            proxy_child_stdin(pty_write, input_stream),
+            proxy_child_stdout(pty_read, output_stream)
+        )?;
+        Ok(())
+    }
 }
 
-async fn proxy_child_stdin<R: AsyncRead + Unpin>(
+async fn proxy_child_stdin<R: ReadStream>(
     child_stdin: PtyWriter,
     mut input_stream: R,
 ) -> anyhow::Result<()> {
@@ -42,7 +49,7 @@ async fn proxy_child_stdin<R: AsyncRead + Unpin>(
 
 async fn proxy_child_stdout<W>(mut pty_reader: PtyReader, mut write: W) -> anyhow::Result<()>
 where
-    W: AsyncWrite + Unpin,
+    W: WriteStream,
 {
     loop {
         let next = pty_reader.read_bytes().await?;

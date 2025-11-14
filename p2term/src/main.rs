@@ -1,13 +1,15 @@
-use anyhow::Context;
+use crate::shell::ShellProxy;
 use clap::Parser;
+use iroh::endpoint::{RecvStream, SendStream};
 use iroh::{PublicKey, SecretKey};
+use p2term_lib::client::runtime;
 use p2term_lib::convert::HexConvert;
 use p2term_lib::crypto::any_secret_key;
 use p2term_lib::error::unpack;
+use p2term_lib::server_handle::P2TermServerHandle;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-mod proto;
 mod shell;
 
 #[derive(Debug, clap::Parser)]
@@ -25,7 +27,8 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> ExitCode {
-    match run().await {
+    let args = Args::parse();
+    match start_connection(args).await {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
             eprintln!("error: {}", unpack(&*e));
@@ -34,13 +37,10 @@ async fn main() -> ExitCode {
     }
 }
 
-async fn run() -> anyhow::Result<()> {
-    let args = Args::parse();
+async fn start_connection(args: Args) -> anyhow::Result<()> {
     let args = parse_args(&args)?;
-    let (send, recv) = proto::connect(args.peer, args.secret_key).await?;
-    shell::shell_proxy(recv, send)
-        .await
-        .context("failed to run shell proxy")
+    let server_handle = P2TermServerHandle::connect(args.secret_key, args.peer).await?;
+    runtime::run::<SendStream, RecvStream, ShellProxy>(server_handle).await
 }
 
 struct ParsedArgs {

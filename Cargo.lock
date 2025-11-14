@@ -2037,7 +2037,6 @@ dependencies = [
  "clap",
  "iroh",
  "p2term-lib",
- "portable-pty",
  "termion",
  "tokio",
 ]
@@ -2048,9 +2047,16 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "hex",
+ "iroh",
  "iroh-base",
+ "postcard",
  "rand_chacha 0.9.0",
  "rand_core 0.9.3",
+ "rustc-hash",
+ "serde",
+ "termion",
+ "tokio",
+ "toml",
  "tracing",
 ]
 

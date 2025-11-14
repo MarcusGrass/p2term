@@ -1,13 +1,13 @@
-mod config;
 mod observability;
-pub(crate) mod proto;
 mod shell;
-mod termd;
 
 use crate::observability::setup_observability;
-use crate::termd::termd;
+use crate::shell::handler::ShellProxyImpl;
 use anyhow::Context;
 use clap::Parser;
+use p2term_lib::server::config::P2TermdCfg;
+use p2term_lib::server::router::{P2TermRouter, P2TermRouterImpl};
+use p2term_lib::server::shell_proxy::ServerShellProxy;
 use std::path::PathBuf;
 
 #[derive(Debug, clap::Parser)]
@@ -19,24 +19,28 @@ pub struct Args {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     setup_observability();
-    run(args).await.unwrap();
+    run::<P2TermRouterImpl, ShellProxyImpl>(args).await
 }
 
-async fn run(args: Args) -> anyhow::Result<()> {
+async fn run<Router, Shell>(args: Args) -> anyhow::Result<()>
+where
+    Router: P2TermRouter,
+    Shell: ServerShellProxy,
+{
     let config = if let Some(config_file) = args.config_file {
         let bytes = std::fs::read(&config_file)
             .with_context(|| format!("failed to read config file at {}", config_file.display()))?;
-        config::P2TermdCfg::parse_toml(&bytes)?
+        P2TermdCfg::parse_toml(&bytes)?
     } else {
-        let cfg = config::P2TermdCfg::default();
+        let cfg = P2TermdCfg::default();
         tracing::warn!(
             "no config file supplied, using generated key-pair with public_key={} and allowing any connection",
             cfg.secret_key.public()
         );
         cfg
     };
-    termd(config).await
+    p2term_lib::server::runtime::run::<Router, Shell>(config).await
 }

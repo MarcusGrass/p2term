@@ -9,7 +9,6 @@ p2term-lib = { workspace = true }
 anyhow = { workspace = true }
 clap = { workspace = true }
 iroh = { workspace = true }
-portable-pty = { workspace = true }
 termion = { workspace = true }
 tokio = { workspace = true }
 
