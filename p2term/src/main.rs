@@ -2,7 +2,7 @@ use anyhow::Context;
 use clap::Parser;
 use iroh::{PublicKey, SecretKey};
 use p2term_lib::convert::HexConvert;
-use p2term_lib::crypto::generate_secret_key;
+use p2term_lib::crypto::any_secret_key;
 use p2term_lib::error::unpack;
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -50,27 +50,9 @@ struct ParsedArgs {
 
 fn parse_args(args: &Args) -> anyhow::Result<ParsedArgs> {
     let peer = PublicKey::try_from_hex(args.node_id.as_bytes())?;
-    let secret_key = secret_key(args)?;
+    let secret_key = any_secret_key(
+        args.secret_key_hex.as_deref(),
+        args.secret_key_file.as_deref(),
+    )?;
     Ok(ParsedArgs { peer, secret_key })
-}
-
-fn secret_key(args: &Args) -> anyhow::Result<SecretKey> {
-    if let Some(secret_key_hex) = args.secret_key_hex.as_deref() {
-        SecretKey::try_from_hex(secret_key_hex.as_bytes())
-    } else if let Some(secret_key_file) = args.secret_key_file.as_deref() {
-        let key_raw = std::fs::read(secret_key_file).with_context(|| {
-            format!(
-                "failed to read secret key file={}",
-                secret_key_file.display()
-            )
-        })?;
-        SecretKey::try_from_hex(&key_raw)
-    } else {
-        let sk = generate_secret_key();
-        println!(
-            "Generating secret key for connection, public key={}",
-            sk.public()
-        );
-        Ok(sk)
-    }
 }

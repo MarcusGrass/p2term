@@ -1,7 +1,7 @@
 use anyhow::Context;
 use iroh::{PublicKey, SecretKey};
 use p2term_lib::convert::HexConvert;
-use p2term_lib::crypto::generate_secret_key;
+use p2term_lib::crypto::{any_secret_key, generate_secret_key};
 use rustc_hash::FxHashSet;
 use std::path::PathBuf;
 
@@ -47,31 +47,12 @@ impl P2TermdCfg {
     pub fn parse_toml(bytes: &[u8]) -> anyhow::Result<Self> {
         let toml_cfg: P2TermdTomlCfg =
             toml::from_slice(bytes).context("failed to parse toml config")?;
-        let secret_key = find_or_generate_secret_key(&toml_cfg)?;
+        let secret_key = any_secret_key(
+            toml_cfg.secret_key_hex.as_deref(),
+            toml_cfg.secret_key_file.as_deref(),
+        )?;
         let access = create_access(toml_cfg.allowed_peers)?;
         Ok(Self { secret_key, access })
-    }
-}
-
-fn find_or_generate_secret_key(toml: &P2TermdTomlCfg) -> anyhow::Result<SecretKey> {
-    if let Some(secret_key_hex) = toml.secret_key_hex.as_deref() {
-        SecretKey::try_from_hex(secret_key_hex.as_bytes())
-            .context("supplied an invalid secret key hex")
-    } else if let Some(secret_key_path) = toml.secret_key_file.as_deref() {
-        let raw = std::fs::read(secret_key_path).with_context(|| {
-            format!(
-                "failed to read secret key file at {}",
-                secret_key_path.display()
-            )
-        })?;
-        SecretKey::try_from_hex(&raw)
-    } else {
-        let sk = generate_secret_key();
-        tracing::info!(
-            "no secret key supplied, generated a new one with pk={}",
-            sk.public()
-        );
-        Ok(sk)
     }
 }
 

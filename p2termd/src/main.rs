@@ -33,7 +33,7 @@ async fn run(args: Args) -> anyhow::Result<()> {
     } else {
         let cfg = config::P2TermdCfg::default();
         tracing::warn!(
-            "no config file supplied, using generated key-pair with public_key={} and allowin any connection",
+            "no config file supplied, using generated key-pair with public_key={} and allowing any connection",
             cfg.secret_key.public()
         );
         cfg
