@@ -7,27 +7,33 @@ use iroh::protocol::{Router, RouterBuilder};
 use iroh_base::SecretKey;
 
 pub trait P2TermRouter: Sized {
-    fn create<S>(
+    fn start<S>(
+        &mut self,
         secret_key: SecretKey,
         handler: P2TermConnectionHandler<S>,
-    ) -> impl Future<Output = anyhow::Result<Self>>
+    ) -> impl Future<Output = anyhow::Result<()>>
     where
         S: ServerShellProxy;
     fn shutdown(&mut self) -> impl Future<Output = anyhow::Result<()>>;
 }
 
+#[derive(Default)]
 pub struct P2TermRouterImpl {
-    inner: Router,
+    inner: Option<Router>,
 }
 
 impl P2TermRouter for P2TermRouterImpl {
-    async fn create<S>(
+    async fn start<S>(
+        &mut self,
         secret_key: SecretKey,
         handler: P2TermConnectionHandler<S>,
-    ) -> anyhow::Result<Self>
+    ) -> anyhow::Result<()>
     where
         S: ServerShellProxy,
     {
+        self.inner
+            .take()
+            .map(|r| tokio::task::spawn(async move { r.shutdown().await }));
         let ep = iroh::Endpoint::builder()
             .discovery(DnsDiscovery::n0_dns())
             .secret_key(secret_key)
@@ -36,13 +42,15 @@ impl P2TermRouter for P2TermRouterImpl {
             .await
             .context("Failed to bind endpoint")?;
         let router = RouterBuilder::new(ep).accept(ALPN, handler).spawn();
-        Ok(Self { inner: router })
+        self.inner = Some(router);
+        Ok(())
     }
 
     async fn shutdown(&mut self) -> anyhow::Result<()> {
-        self.inner
-            .shutdown()
-            .await
-            .context("failed to shutdown router")
+        if let Some(inner) = &mut self.inner {
+            inner.shutdown().await.context("failed to shutdown router")
+        } else {
+            Ok(())
+        }
     }
 }

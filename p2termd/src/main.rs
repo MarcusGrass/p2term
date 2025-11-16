@@ -22,10 +22,11 @@ pub struct Args {
 async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     setup_observability();
-    run::<P2TermRouterImpl, ShellProxyImpl>(args).await
+    let router = P2TermRouterImpl::default();
+    run::<P2TermRouterImpl, ShellProxyImpl>(args, router).await
 }
 
-async fn run<Router, Shell>(args: Args) -> anyhow::Result<()>
+async fn run<Router, Shell>(args: Args, router: Router) -> anyhow::Result<()>
 where
     Router: P2TermRouter,
     Shell: ServerShellProxy,
@@ -42,5 +43,5 @@ where
         );
         cfg
     };
-    p2term_lib::server::runtime::run::<Router, Shell>(config).await
+    p2term_lib::server::runtime::run::<Router, Shell>(config, router).await
 }

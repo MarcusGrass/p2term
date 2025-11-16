@@ -6,13 +6,13 @@ use crate::server::shell_proxy::ServerShellProxy;
 use anyhow::Context;
 use tokio::signal::unix::SignalKind;
 
-pub async fn run<Router, S>(config: P2TermdCfg) -> anyhow::Result<()>
+pub async fn run<Router, S>(config: P2TermdCfg, mut router: Router) -> anyhow::Result<()>
 where
     Router: P2TermRouter,
     S: ServerShellProxy,
 {
     let handler = P2TermConnectionHandler::new(config.access);
-    let mut router = Router::create::<S>(config.secret_key, handler).await?;
+    router.start::<S>(config.secret_key, handler).await?;
     let mut term = tokio::signal::unix::signal(SignalKind::terminate())
         .context("failed to add signal handler for SIGTERM")?;
     let mut int = tokio::signal::unix::signal(SignalKind::interrupt())
