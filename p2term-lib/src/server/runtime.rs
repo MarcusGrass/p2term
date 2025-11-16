@@ -1,5 +1,6 @@
 use crate::error::unpack;
 use crate::server::config::P2TermdCfg;
+use crate::server::connection_handler::P2TermConnectionHandler;
 use crate::server::router::P2TermRouter;
 use crate::server::shell_proxy::ServerShellProxy;
 use anyhow::Context;
@@ -10,7 +11,8 @@ where
     Router: P2TermRouter,
     S: ServerShellProxy,
 {
-    let mut router = Router::create::<S>(config).await?;
+    let handler = P2TermConnectionHandler::new(config.access);
+    let mut router = Router::create::<S>(config.secret_key, handler).await?;
     let mut term = tokio::signal::unix::signal(SignalKind::terminate())
         .context("failed to add signal handler for SIGTERM")?;
     let mut int = tokio::signal::unix::signal(SignalKind::interrupt())

@@ -10,25 +10,6 @@ impl WriteStream for SendStream {}
 pub trait ReadStream: AsyncRead + Debug + Unpin + Send + Sync + 'static {}
 impl ReadStream for RecvStream {}
 
-pub trait P2TermClientConnection {
-    fn peer(&self) -> iroh::PublicKey;
-    fn open(&self) -> impl Future<Output = anyhow::Result<(impl WriteStream, impl ReadStream)>>;
-}
-
-impl P2TermClientConnection for Connection {
-    fn peer(&self) -> iroh::PublicKey {
-        self.remote_id()
-    }
-
-    async fn open(&self) -> anyhow::Result<(impl WriteStream, impl ReadStream)> {
-        let (send, recv) = self
-            .open_bi()
-            .await
-            .context("failed to open bidirectional connection to server")?;
-        Ok((send, recv))
-    }
-}
-
 pub trait P2TermServerConnection<W, R>: Send {
     fn peer(&self) -> iroh::PublicKey;
     fn accept(
