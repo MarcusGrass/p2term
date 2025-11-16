@@ -42,9 +42,6 @@ async fn proxy_child_stdin<W: AsyncWrite + Unpin>(
         let read_bytes = this_stdin
             .read(&mut buf)
             .context("failed to read from stdin")?;
-        if read_bytes == 1 && buf[0] == 3 {
-            anyhow::bail!("Ctrl-C detected, exiting...\r");
-        }
         if read_bytes > 0 {
             writer
                 .write_all(&buf[..read_bytes])

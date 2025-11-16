@@ -38,9 +38,6 @@ async fn proxy_child_stdin<R: ReadStream>(
         if read_bytes == 0 {
             return Ok(());
         }
-        if buf[..read_bytes].contains(&3) {
-            anyhow::bail!("Exit on ctrl-c");
-        }
         if read_bytes > 0 {
             child_stdin.write_chunk(&buf[..read_bytes])?;
         }
