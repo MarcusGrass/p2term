@@ -20,15 +20,19 @@ struct Args {
     node_id: String,
 
     /// Secret key hex
+    #[clap(long)]
     secret_key_hex: Option<String>,
 
     /// Secret key file
+    #[clap(long)]
     secret_key_file: Option<PathBuf>,
 
     /// Shell to use on server, must be available on the server
+    #[clap(long)]
     shell: Option<String>,
 
     /// Cwd for the shell on the server
+    #[clap(long)]
     cwd: Option<PathBuf>,
 }
 
