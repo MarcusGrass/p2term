@@ -6,6 +6,7 @@ use p2term_lib::client::runtime;
 use p2term_lib::convert::HexConvert;
 use p2term_lib::crypto::any_secret_key;
 use p2term_lib::error::unpack;
+use p2term_lib::proto::ClientOpt;
 use p2term_lib::server_handle::P2TermServerHandle;
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -23,6 +24,12 @@ struct Args {
 
     /// Secret key file
     secret_key_file: Option<PathBuf>,
+
+    /// Shell to use on server, must be available on the server
+    shell: Option<String>,
+
+    /// Cwd for the shell on the server
+    cwd: Option<PathBuf>,
 }
 
 #[tokio::main]
@@ -38,9 +45,13 @@ async fn main() -> ExitCode {
 }
 
 async fn start_connection(args: Args) -> anyhow::Result<()> {
-    let args = parse_args(&args)?;
-    let server_handle = P2TermServerHandle::connect(args.secret_key, args.peer).await?;
-    runtime::run::<SendStream, RecvStream, ShellProxy>(server_handle).await
+    let parsed = parse_args(&args)?;
+    let server_handle = P2TermServerHandle::connect(parsed.secret_key, parsed.peer).await?;
+    let client_opt = ClientOpt {
+        shell: args.shell,
+        cwd: args.cwd,
+    };
+    runtime::run::<SendStream, RecvStream, ShellProxy>(server_handle, &client_opt).await
 }
 
 struct ParsedArgs {

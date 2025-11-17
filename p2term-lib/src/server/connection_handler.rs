@@ -1,6 +1,6 @@
 use crate::connection::{P2TermServerConnection, ReadStream, WriteStream};
 use crate::error::unpack;
-use crate::server::config::P2TermdAccess;
+use crate::server::config::{P2TermdAccess, ShellCfg};
 use crate::server::shell_proxy::ServerShellProxy;
 use anyhow::Context;
 use iroh::endpoint::Connection;
@@ -22,13 +22,16 @@ pub trait ConnectionHandler: Sized + Debug + Send + Sync + 'static {
 #[derive(Debug)]
 pub struct P2TermConnectionHandler<S> {
     access: P2TermdAccess,
+    shell_cfg: ShellCfg,
     _pd: PhantomData<S>,
 }
 
 impl<S> P2TermConnectionHandler<S> {
-    pub fn new(access: P2TermdAccess) -> Self {
+    #[must_use]
+    pub fn new(access: P2TermdAccess, shell_cfg: ShellCfg) -> Self {
         Self {
             access,
+            shell_cfg,
             _pd: PhantomData,
         }
     }
@@ -55,7 +58,7 @@ where
             });
         }
         tracing::debug!("accepted connection from peer={peer}");
-        if let Err(e) = serve_client::<W, R, S>(connection, peer).await {
+        if let Err(e) = serve_client::<W, R, S>(connection, peer, &self.shell_cfg).await {
             tracing::warn!(
                 "failed to serve client connection to peer={peer}: {}",
                 unpack(&*e)
@@ -68,14 +71,16 @@ where
 async fn serve_client<W: WriteStream, R: ReadStream, S: ServerShellProxy>(
     connection: impl P2TermServerConnection<W, R>,
     peer: PublicKey,
+    shell_cfg: &ShellCfg,
 ) -> anyhow::Result<()> {
     let mut client = connection
         .accept(peer)
         .await
         .context("failed to accept client")?;
-    client.recv_hello().await?;
+    let client_opt = client.recv_hello().await?;
+    shell_cfg.validate_opt(&client_opt)?;
     let (write, read) = client.decompose();
-    S::run::<W, R>(write, read).await
+    S::run::<W, R>(write, read, shell_cfg, client_opt).await
 }
 
 impl<S> ProtocolHandler for P2TermConnectionHandler<S>

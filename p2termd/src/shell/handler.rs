@@ -1,6 +1,8 @@
 use crate::shell::pty::{PtyReader, PtyWriter, subshell_pty_task};
 use anyhow::Context;
 use p2term_lib::connection::{ReadStream, WriteStream};
+use p2term_lib::proto::ClientOpt;
+use p2term_lib::server::config::ShellCfg;
 use p2term_lib::server::shell_proxy::ServerShellProxy;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -8,16 +10,21 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 pub struct ShellProxyImpl;
 
 impl ServerShellProxy for ShellProxyImpl {
-    async fn run<W, R>(output_stream: W, input_stream: R) -> anyhow::Result<()>
+    async fn run<W, R>(
+        output_stream: W,
+        input_stream: R,
+        shell_cfg: &ShellCfg,
+        client_opt: ClientOpt,
+    ) -> anyhow::Result<()>
     where
         W: WriteStream,
         R: ReadStream,
     {
-        let shell = std::env::var("SHELL").unwrap_or_else(|_| {
-            eprintln!("SHELL not set, defaulting to /bin/bash");
-            "/bin/bash".to_string()
-        });
-        let (pty_write, pty_read) = subshell_pty_task(&shell)?;
+        let shell = client_opt
+            .shell
+            .as_deref()
+            .unwrap_or(shell_cfg.default_shell.as_str());
+        let (pty_write, pty_read) = subshell_pty_task(shell, client_opt.cwd.as_deref())?;
         tokio::try_join!(
             proxy_child_stdin(pty_write, input_stream),
             proxy_child_stdout(pty_read, output_stream)

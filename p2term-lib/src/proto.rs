@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 pub const ALPN: &[u8] = b"p2term-proto";
 
 pub const HELLO: &[u8; 8] = b"hello   ";
@@ -7,6 +9,6 @@ pub const OPT_MAX_LEN: usize = 4096;
 
 #[derive(Default, serde::Deserialize, serde::Serialize)]
 pub struct ClientOpt {
-    shell: Option<String>,
-    cwd: Option<String>,
+    pub shell: Option<String>,
+    pub cwd: Option<PathBuf>,
 }

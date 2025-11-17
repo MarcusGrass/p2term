@@ -6,9 +6,10 @@ use anyhow::Context;
 
 pub async fn run<W: WriteStream, R: ReadStream, S: ClientShellProxy>(
     mut server: P2TermServerHandle<W, R>,
+    client_opt: &ClientOpt,
 ) -> anyhow::Result<()> {
     server
-        .handshake(&ClientOpt::default())
+        .handshake(client_opt)
         .await
         .context("server handshake failed")?;
     let (send, recv) = server.decompose();

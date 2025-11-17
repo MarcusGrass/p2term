@@ -11,6 +11,15 @@ pub struct P2TermServerHandle<W, R> {
     recv_stream: R,
 }
 
+impl<W, R> P2TermServerHandle<W, R> {
+    pub fn new(w: W, r: R) -> Self {
+        Self {
+            send_stream: w,
+            recv_stream: r,
+        }
+    }
+}
+
 impl P2TermServerHandle<SendStream, RecvStream> {
     pub async fn connect(secret_key: SecretKey, peer: PublicKey) -> anyhow::Result<Self> {
         let ep = Endpoint::builder()

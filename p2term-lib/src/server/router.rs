@@ -6,15 +6,15 @@ use iroh::discovery::dns::DnsDiscovery;
 use iroh::protocol::{Router, RouterBuilder};
 use iroh_base::SecretKey;
 
-pub trait P2TermRouter: Sized {
+pub trait P2TermRouter: Sized + Send + 'static {
     fn start<S>(
         &mut self,
         secret_key: SecretKey,
         handler: P2TermConnectionHandler<S>,
-    ) -> impl Future<Output = anyhow::Result<()>>
+    ) -> impl Future<Output = anyhow::Result<()>> + Send
     where
         S: ServerShellProxy;
-    fn shutdown(&mut self) -> impl Future<Output = anyhow::Result<()>>;
+    fn shutdown(&mut self) -> impl Future<Output = anyhow::Result<()>> + Send;
 }
 
 #[derive(Default)]

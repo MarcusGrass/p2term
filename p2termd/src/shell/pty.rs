@@ -2,6 +2,7 @@ use anyhow::Context;
 use p2term_lib::error::unpack;
 use portable_pty::{CommandBuilder, PtySize};
 use std::io::{Read, Write};
+use std::path::Path;
 
 pub struct PtyWriter {
     pty_sender: std::sync::mpsc::SyncSender<ShellMessage>,
@@ -41,9 +42,15 @@ enum ShellMessage {
     Chunk(Vec<u8>),
 }
 
-pub fn subshell_pty_task(shell: &str) -> anyhow::Result<(PtyWriter, PtyReader)> {
+pub fn subshell_pty_task(
+    shell: &str,
+    cwd: Option<&Path>,
+) -> anyhow::Result<(PtyWriter, PtyReader)> {
     let pty_sys = portable_pty::native_pty_system();
-    let cmd = CommandBuilder::new(shell);
+    let mut cmd = CommandBuilder::new(shell);
+    if let Some(cwd) = cwd {
+        cmd.cwd(cwd);
+    }
     let pty = pty_sys
         .openpty(PtySize::default())
         .context("failed to open pty for shell")?;
