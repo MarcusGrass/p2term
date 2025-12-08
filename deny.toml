@@ -1,0 +1,89 @@
+[advisories]
+ignore = [
+    # `atomic-polyfil` unmaintained, not much to do here, pulled in through `iroh`
+    "RUSTSEC-2023-0089",
+    # `instant` unmaintained, same as above
+    "RUSTSEC-2024-0384",
+    # `paste` unmaintained, same as above
+    "RUSTSEC-2024-0436",
+]
+
+[bans]
+multiple-versions = "deny"
+deny = [
+]
+skip = [
+    # The windows ecosystem is catastrophic
+    { name = "windows_x86_64_msvc" },
+    { name = "windows_x86_64_gnullvm" },
+    { name = "windows_x86_64_gnu" },
+    { name = "windows_i686_msvc" },
+    { name = "windows_i686_gnullvm" },
+    { name = "windows_i686_gnu" },
+    { name = "windows_aarch64_msvc" },
+    { name = "windows_aarch64_gnullvm" },
+    { name = "windows-threading" },
+    { name = "windows-targets" },
+    { name = "windows-sys" },
+    { name = "windows-strings" },
+    { name = "windows-result" },
+    { name = "windows-numerics" },
+    { name = "windows-link" },
+    { name = "windows-future" },
+    { name = "windows-core" },
+    { name = "windows-collections" },
+    { name = "windows" },
+    { name = "winreg" },
+    # transiently pulled in through `portable-pty` (direct) and `iroh` indirectly
+    { name = "thiserror-impl", version = "=1.0.69" },
+    # Same as above
+    { name = "thiserror", version = "=1.0.69" },
+    # Pulled in through iroh metrics (and later version through another iroh sub-crate)
+    { name = "spin", version = "=0.9.8" },
+    # Pulled in through iroh
+    { name = "socket2", version = "=0.5.10" },
+    # Same as above
+    { name = "rand_core", version = "=0.6.4" },
+    # Same as above
+    { name = "rand_chacha", version = "=0.3.1" },
+    # Same as above
+    { name = "rand", version = "=0.8.5" },
+    # Same as above
+    { name = "lru", version = "=0.13.0" },
+    # Same as above
+    { name = "getrandom", version = "=0.2.16" },
+    # Same as above
+    { name = "derive_more-impl", version = "=1.0.0" },
+    # Same as above
+    { name = "derive_more", version = "=1.0.0" },
+    # Same as above
+    { name = "core-foundation", version = "=0.9.4" },
+    # Same as above
+    { name = "cfg_aliases", version = "=0.1.1" },
+    # Same as above (and portable-pty)
+    { name = "cfg_aliases", version = "=0.1.1" },
+    # Same as above (and portable-pty)
+    { name = "bitflags", version = "=1.3.2" },
+
+]
+
+[sources]
+allow-git = [
+]
+
+[licenses]
+confidence-threshold = 1.0
+allow = [
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "CDLA-Permissive-2.0",
+    "GPL-3.0-only",
+    "ISC",
+    "MIT",
+    "MPL-2.0",
+    "Unicode-3.0",
+    "Unlicense",
+    "Zlib",
+]
+exceptions = []
