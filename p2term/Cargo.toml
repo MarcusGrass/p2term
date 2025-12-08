@@ -1,0 +1,16 @@
+[package]
+name = "p2term"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+p2term-lib = { workspace = true, features = ["client"] }
+
+anyhow = { workspace = true }
+clap = { workspace = true }
+iroh = { workspace = true }
+termion = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread"] }
+
+[lints]
+workspace = true

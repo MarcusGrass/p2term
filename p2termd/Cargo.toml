@@ -1,0 +1,18 @@
+[package]
+name = "p2termd"
+version = "0.1.0"
+edition = "2024"
+
+
+[dependencies]
+p2term-lib = { workspace = true, features = ["server"] }
+
+anyhow = { workspace = true }
+clap = { workspace = true }
+portable-pty = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread"] }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+[lints]
+workspace = true

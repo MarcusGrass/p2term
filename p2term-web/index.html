@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>P2term</title>
+    <link rel="stylesheet" href="./node_modules/@xterm/xterm/css/xterm.css" />
+    <script src="./node_modules/@xterm/xterm/lib/xterm.js"></script>
+    <style>
+        .key-inputs {
+            padding: 20px;
+            background-color: #f5f5f5;
+            border-bottom: 1px solid #ddd;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-family: Arial, sans-serif;
+        }
+        .input-group input {
+            width: 100%;
+            max-width: 600px;
+            padding: 8px;
+            font-family: monospace;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        .generate-btn {
+            padding: 8px 16px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: Arial, sans-serif;
+            white-space: nowrap;
+        }
+        .generate-btn:hover {
+            background-color: #0b7dda;
+        }
+        .generate-btn:active {
+            background-color: #0a6bc2;
+        }
+        .submit-btn {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: Arial, sans-serif;
+        }
+        .submit-btn:hover {
+            background-color: #45a049;
+        }
+        .submit-btn:active {
+            background-color: #3d8b40;
+        }
+        .submit-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #ffffff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        .hidden {
+            display: none;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+<div class="key-inputs">
+    <div class="input-group">
+        <label for="secret-key">Your secret key:</label>
+        <div class="input-wrapper">
+            <input type="text" id="secret-key" placeholder="Enter hexadecimal secret key" pattern="[0-9a-fA-F]*">
+            <button class="generate-btn" id="generate-key-btn">Generate</button>
+        </div>
+    </div>
+    <div class="input-group">
+        <label for="public-key">Peer public key:</label>
+        <input type="text" id="public-key" placeholder="Enter hexadecimal peer public key" pattern="[0-9a-fA-F]*">
+    </div>
+    <button class="submit-btn" id="connect-btn">
+        Connect
+        <span class="spinner hidden" id="spinner"></span>
+    </button>
+</div>
+<script type="module">
+    import init, {connect, generate_private_key} from './pkg/p2term_web.js';
+    let term_alive = false;
+    let term = null;
+    init().then(() => {
+        document.getElementById('generate-key-btn').addEventListener('click', () => {
+            const secretKeyInput = document.getElementById('secret-key');
+            secretKeyInput.value = generate_private_key();
+        });
+        document.getElementById('connect-btn').addEventListener('click', () => {
+            if (term !== null) {
+                term.dispose();
+            }
+            const connectBtn = document.getElementById('connect-btn');
+            const spinner = document.getElementById('spinner');
+            
+            // Show spinner and disable button
+            spinner.classList.remove('hidden');
+            connectBtn.disabled = true;
+            
+            term = new Terminal();
+            const secretKey = document.getElementById('secret-key').value;
+            const publicKey = document.getElementById('public-key').value;
+            connect(term, secretKey, publicKey, null, null, (e) => {
+                console.log(`connection error: ${e}`);
+                term_alive = false;
+                // Hide spinner and re-enable button on error
+                spinner.classList.add('hidden');
+                connectBtn.disabled = false;
+            })
+                .then((sender) => {
+                    term_alive = true;
+                    // Hide spinner when connected
+                    spinner.classList.add('hidden');
+                    term.open(document.getElementById('terminal'));
+                    term.onData(data => {
+                        if (term_alive === true) {
+                            sender.on_data(data).catch((err) => {
+                                term_alive = false;
+                                connectBtn.disabled = false;
+                                console.log(`terminal send returned error: ${err}`);
+                            });
+                        }
+
+                    });
+                }).catch((err) => {
+                    term_alive = false;
+                    console.log(`terminal session ended with error: ${err}`);
+                    // Hide spinner and re-enable button on error
+                    spinner.classList.add('hidden');
+                    connectBtn.disabled = false;
+            });
+        });
+    });
+</script>
+<div id="terminal"></div>
+</body>
+</html>
