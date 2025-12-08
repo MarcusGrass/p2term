@@ -2,6 +2,11 @@
 members = ["p2termd","p2term-lib", "p2term", "p2term-web"]
 resolver = "3"
 
+[workspace.package]
+edition = "2024"
+version = "0.1.0"
+license = "GPL-3.0-only"
+
 [workspace.dependencies]
 
 p2term-lib = { path = "./p2term-lib"}
