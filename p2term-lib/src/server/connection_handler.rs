@@ -1,7 +1,8 @@
-use crate::connection::{P2TermServerConnection, ReadStream, WriteStream};
 use crate::error::unpack;
 use crate::server::config::{P2TermdAccess, ShellCfg};
+use crate::server::connection::P2TermServerConnection;
 use crate::server::shell_proxy::ServerShellProxy;
+use crate::streams::{ReadStream, WriteStream};
 use anyhow::Context;
 use iroh::endpoint::Connection;
 use iroh::protocol::{AcceptError, ProtocolHandler};
@@ -57,7 +58,7 @@ where
                 meta: Default::default(),
             });
         }
-        tracing::debug!("accepted connection from peer={peer}");
+        tracing::info!("accepted connection from peer={peer}");
         if let Err(e) = serve_client::<W, R, S>(connection, peer, &self.shell_cfg).await {
             tracing::warn!(
                 "failed to serve client connection to peer={peer}: {}",

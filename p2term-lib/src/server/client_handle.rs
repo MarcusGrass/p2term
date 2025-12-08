@@ -1,5 +1,5 @@
-use crate::connection::{ReadStream, WriteStream};
 use crate::proto::ClientOpt;
+use crate::streams::{ReadStream, WriteStream};
 use anyhow::{Context, bail};
 use iroh_base::EndpointId;
 use std::fmt::Debug;

@@ -1,24 +1,25 @@
 use anyhow::Context;
-use p2term_lib::error::unpack;
 use portable_pty::{CommandBuilder, PtySize};
 use std::io::{Read, Write};
 use std::path::Path;
 
 pub struct PtyWriter {
-    pty_sender: std::sync::mpsc::SyncSender<ShellMessage>,
+    pty_sender: tokio::sync::mpsc::Sender<ShellMessage>,
 }
 
 impl PtyWriter {
-    pub fn write_chunk(&self, chunk: &[u8]) -> anyhow::Result<()> {
+    pub async fn write_chunk(&self, chunk: &[u8]) -> anyhow::Result<()> {
         match chunk.len() {
             0 => Ok(()),
             1 => self
                 .pty_sender
-                .try_send(ShellMessage::Byte(chunk[0]))
+                .send(ShellMessage::Byte(chunk[0]))
+                .await
                 .context("failed to send message to pty sender"),
             _ => self
                 .pty_sender
-                .try_send(ShellMessage::Chunk(chunk.to_vec()))
+                .send(ShellMessage::Chunk(chunk.to_vec()))
+                .await
                 .context("failed to send message to pty sender"),
         }
     }
@@ -45,7 +46,11 @@ enum ShellMessage {
 pub fn subshell_pty_task(
     shell: &str,
     cwd: Option<&Path>,
-) -> anyhow::Result<(PtyWriter, PtyReader)> {
+) -> anyhow::Result<(
+    PtyWriter,
+    PtyReader,
+    tokio::sync::mpsc::Receiver<anyhow::Error>,
+)> {
     let pty_sys = portable_pty::native_pty_system();
     let mut cmd = CommandBuilder::new(shell);
     if let Some(cwd) = cwd {
@@ -66,16 +71,18 @@ pub fn subshell_pty_task(
         .master
         .take_writer()
         .context("failed to take pty writer")?;
-    let (input_to_pty, bytes_to_pty) = std::sync::mpsc::sync_channel(128);
+    let (input_to_pty, mut bytes_to_pty) = tokio::sync::mpsc::channel(128);
+    let (err_sender, err_receiver) = tokio::sync::mpsc::channel(2);
+    let err_c = err_sender.clone();
     std::thread::spawn(move || {
-        if let Err(e) = subshell_writer_task(&bytes_to_pty, writer) {
-            eprintln!("Error in subshell writer thread: {}", unpack(&*e));
+        if let Err(e) = subshell_writer_task(&mut bytes_to_pty, writer) {
+            let _ = err_c.blocking_send(e);
         }
     });
     let (pty_sender, pty_bytes_recv) = tokio::sync::mpsc::channel(128);
     std::thread::spawn(move || {
         if let Err(e) = subshell_reader_task(&pty_sender, reader) {
-            eprintln!("Error in subshell reader thread: {}", unpack(&*e));
+            let _ = err_sender.blocking_send(e);
         }
     });
     Ok((
@@ -83,16 +90,17 @@ pub fn subshell_pty_task(
             pty_sender: input_to_pty,
         },
         PtyReader { pty_bytes_recv },
+        err_receiver,
     ))
 }
 
 fn subshell_writer_task(
-    input: &std::sync::mpsc::Receiver<ShellMessage>,
+    input: &mut tokio::sync::mpsc::Receiver<ShellMessage>,
     mut writer: Box<dyn Write + Send>,
 ) -> anyhow::Result<()> {
     loop {
         let msg = input
-            .recv()
+            .blocking_recv()
             .context("failed to receive message from input channel")?;
         match msg {
             ShellMessage::Byte(b) => writer.write_all(&[b]).context("failed to write to pty")?,
@@ -110,8 +118,11 @@ fn subshell_reader_task(
     let mut buf = [0u8; 4096];
     loop {
         let read_bytes = reader.read(&mut buf).context("failed to read from pty")?;
+        if read_bytes == 0 {
+            return Ok(());
+        }
         output
-            .try_send(buf[..read_bytes].to_vec())
+            .blocking_send(buf[..read_bytes].to_vec())
             .context("failed to send message to output channel")?;
     }
 }

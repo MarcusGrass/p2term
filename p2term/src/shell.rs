@@ -1,6 +1,6 @@
 use anyhow::Context;
 use p2term_lib::client::shell_proxy::ClientShellProxy;
-use p2term_lib::connection::{ReadStream, WriteStream};
+use p2term_lib::streams::{ReadStream, WriteStream};
 use std::io::Read;
 use std::io::{Stdout, Write};
 use std::time::Duration;
@@ -11,7 +11,7 @@ use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 pub struct ShellProxy;
 
 impl ClientShellProxy for ShellProxy {
-    async fn run<W, R>(write: W, read: R) -> anyhow::Result<()>
+    async fn run<W, R>(self, write: W, read: R) -> anyhow::Result<()>
     where
         W: WriteStream,
         R: ReadStream,

@@ -1,6 +1,6 @@
-use crate::connection::{ReadStream, WriteStream};
 use crate::proto::ClientOpt;
 use crate::server::config::ShellCfg;
+use crate::streams::{ReadStream, WriteStream};
 use std::fmt::Debug;
 
 pub trait ServerShellProxy: Debug + Send + Sync + 'static {

@@ -5,17 +5,12 @@ edition = "2024"
 
 
 [dependencies]
-p2term-lib = { workspace = true }
+p2term-lib = { workspace = true, features = ["server"] }
 
 anyhow = { workspace = true }
 clap = { workspace = true }
-iroh = { workspace = true }
 portable-pty = { workspace = true }
-rustc-hash = { workspace = true }
-serde = { workspace = true }
-termion = { workspace = true }
-tokio = { workspace = true }
-toml = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 

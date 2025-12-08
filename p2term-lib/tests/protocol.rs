@@ -1,15 +1,16 @@
 use anyhow::Context as _;
 use iroh_base::{PublicKey, SecretKey};
+use p2term_lib::client::server_handle::P2TermServerHandle;
 use p2term_lib::client::shell_proxy::ClientShellProxy;
-use p2term_lib::client_handle::P2TermClientHandle;
-use p2term_lib::connection::{P2TermServerConnection, ReadStream, WriteStream};
 use p2term_lib::crypto::generate_secret_key;
 use p2term_lib::proto::ClientOpt;
+use p2term_lib::server::client_handle::P2TermClientHandle;
 use p2term_lib::server::config::{P2TermdCfg, ShellCfg};
+use p2term_lib::server::connection::P2TermServerConnection;
 use p2term_lib::server::connection_handler::P2TermConnectionHandler;
 use p2term_lib::server::router::P2TermRouter;
 use p2term_lib::server::shell_proxy::ServerShellProxy;
-use p2term_lib::server_handle::P2TermServerHandle;
+use p2term_lib::streams::{ReadStream, WriteStream};
 use std::io::Error;
 use std::pin::Pin;
 use std::sync::Mutex;
@@ -35,7 +36,7 @@ impl ServerShellProxy for NoopShell {
 }
 
 impl ClientShellProxy for NoopShell {
-    async fn run<W, R>(_write: W, _read: R) -> anyhow::Result<()>
+    async fn run<W, R>(self, _write: W, _read: R) -> anyhow::Result<()>
     where
         W: WriteStream,
         R: ReadStream,
@@ -193,7 +194,7 @@ async fn test_protocol() {
     let (finished_sig_send, finished_sig_recv) = tokio::sync::mpsc::channel(2);
     let opt = ClientOpt::default();
     let client_task = tokio::task::spawn(async move {
-        p2term_lib::client::runtime::run::<_, _, NoopShell>(handle, &opt).await
+        p2term_lib::client::runtime::run(handle, &opt, NoopShell).await
     });
     let server_task = tokio::task::spawn(p2term_lib::server::runtime::run::<_, NoopShell>(
         cfg,

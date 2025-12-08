@@ -2054,10 +2054,21 @@ dependencies = [
  "rand_core 0.9.3",
  "rustc-hash",
  "serde",
- "termion",
  "tokio",
  "toml",
  "tracing",
+]
+
+[[package]]
+name = "p2term-web"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "iroh",
+ "p2term-lib",
+ "tokio",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
 ]
 
 [[package]]
@@ -2066,14 +2077,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
- "iroh",
  "p2term-lib",
  "portable-pty",
- "rustc-hash",
- "serde",
- "termion",
  "tokio",
- "toml",
  "tracing",
  "tracing-subscriber",
 ]

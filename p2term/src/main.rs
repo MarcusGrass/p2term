@@ -1,13 +1,12 @@
 use crate::shell::ShellProxy;
 use clap::Parser;
-use iroh::endpoint::{RecvStream, SendStream};
 use iroh::{PublicKey, SecretKey};
 use p2term_lib::client::runtime;
+use p2term_lib::client::server_handle::P2TermServerHandle;
 use p2term_lib::convert::HexConvert;
-use p2term_lib::crypto::any_secret_key;
+use p2term_lib::crypto::{any_secret_key, generate_secret_key};
 use p2term_lib::error::unpack;
 use p2term_lib::proto::ClientOpt;
-use p2term_lib::server_handle::P2TermServerHandle;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
@@ -38,6 +37,12 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> ExitCode {
+    let sk = generate_secret_key();
+    println!(
+        "Generated secret key: {}, pk: {}",
+        sk.to_hex(),
+        sk.public().to_hex()
+    );
     let args = Args::parse();
     match start_connection(args).await {
         Ok(()) => ExitCode::SUCCESS,
@@ -55,7 +60,7 @@ async fn start_connection(args: Args) -> anyhow::Result<()> {
         shell: args.shell,
         cwd: args.cwd,
     };
-    runtime::run::<SendStream, RecvStream, ShellProxy>(server_handle, &client_opt).await
+    runtime::run(server_handle, &client_opt, ShellProxy).await
 }
 
 struct ParsedArgs {

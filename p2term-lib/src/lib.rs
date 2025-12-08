@@ -1,9 +1,9 @@
+#[cfg(feature = "client")]
 pub mod client;
-pub mod client_handle;
-pub mod connection;
 pub mod convert;
 pub mod crypto;
 pub mod error;
 pub mod proto;
+#[cfg(feature = "server")]
 pub mod server;
-pub mod server_handle;
+pub mod streams;

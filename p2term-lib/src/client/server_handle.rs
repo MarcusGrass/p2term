@@ -1,5 +1,5 @@
-use crate::connection::{ReadStream, WriteStream};
 use crate::proto::ClientOpt;
+use crate::streams::{ReadStream, WriteStream};
 use anyhow::Context;
 use iroh::Endpoint;
 use iroh::endpoint::{RecvStream, SendStream};

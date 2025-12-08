@@ -1,14 +1,7 @@
-use crate::client_handle::P2TermClientHandle;
+use crate::server::client_handle::P2TermClientHandle;
 use anyhow::Context;
 use iroh::endpoint::{Connection, RecvStream, SendStream};
 use iroh_base::PublicKey;
-use std::fmt::Debug;
-use tokio::io::{AsyncRead, AsyncWrite};
-
-pub trait WriteStream: AsyncWrite + Debug + Unpin + Send + Sync + 'static {}
-impl WriteStream for SendStream {}
-pub trait ReadStream: AsyncRead + Debug + Unpin + Send + Sync + 'static {}
-impl ReadStream for RecvStream {}
 
 pub trait P2TermServerConnection<W, R>: Send {
     fn peer(&self) -> iroh::PublicKey;
