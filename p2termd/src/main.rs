@@ -120,8 +120,8 @@ impl StopSignal {
 
     #[cfg(windows)]
     fn new(shutdown_send: tokio::sync::mpsc::Sender<()>) -> anyhow::Result<Self> {
-        let term = tokio::signal::windows::ctrl_c()
-            .context("failed to add signal handler for ctrl+c")?;
+        let term =
+            tokio::signal::windows::ctrl_c().context("failed to add signal handler for ctrl+c")?;
         Ok(Self {
             shutdown_send,
             term,
