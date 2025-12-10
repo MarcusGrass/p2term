@@ -10,7 +10,6 @@ use p2term_lib::server::config::P2TermdCfg;
 use p2term_lib::server::router::{P2TermRouter, P2TermRouterImpl};
 use p2term_lib::server::shell_proxy::ServerShellProxy;
 use std::path::PathBuf;
-use tokio::signal::unix::SignalKind;
 
 #[derive(Debug, clap::Parser)]
 pub struct Args {
@@ -51,23 +50,13 @@ where
         router,
         shutdown_recv,
     ));
-    let mut term = tokio::signal::unix::signal(SignalKind::terminate())
-        .context("failed to add signal handler for SIGTERM")?;
-    let mut int = tokio::signal::unix::signal(SignalKind::interrupt())
-        .context("failed to add signal handler for SIGINT")?;
+    let mut stop = StopSignal::new(shutdown_send)?;
     tokio::select! {
-        _ = term.recv() => {
-            tracing::info!("received SIGTERM signal, shutting down");
-            if shutdown_send.try_send(()).is_err() {
-                tracing::warn!("failed to send shutdown signal to router, exiting immediately");
-                return Ok(())
-            }
-        },
-        _ = int.recv() => {
-            tracing::info!("received SIGINT, shutting down");
-            if shutdown_send.try_send(()).is_err() {
-                tracing::warn!("failed to send shutdown signal to router, exiting immediately");
-                return Ok(())
+        exit_now = stop.next() => {
+            tracing::info!("received termination signal, shutting down");
+            if exit_now {
+                tracing::warn!("exiting immediately");
+                return Ok(());
             }
         },
         res = &mut router_task => match res {
@@ -83,19 +72,9 @@ where
     }
     let timer = tokio::time::sleep(std::time::Duration::from_secs(5));
     tokio::select! {
-        _ = term.recv() => {
-            tracing::warn!("received SIGTERM signal during shutdown, forcefully exiting");
-            if shutdown_send.try_send(()).is_err() {
-                tracing::warn!("failed to send shutdown signal to router, exiting immediately");
-                return Ok(())
-            }
-        }
-        _ = int.recv() => {
-            tracing::warn!("received SIGINT signal during shutdown, forcefully exiting");
-            if shutdown_send.try_send(()).is_err() {
-                tracing::warn!("failed to send shutdown signal to router, exiting immediately");
-                return Ok(())
-            }
+        _exit_now = stop.next() => {
+            tracing::warn!("received termination signal during shutdown, exiting immediately");
+            return Ok(());
         }
         () = timer => {
             tracing::warn!("failed to shut down router in time, exiting immediately");
@@ -113,4 +92,65 @@ where
         }
     }
     Ok(())
+}
+
+struct StopSignal {
+    shutdown_send: tokio::sync::mpsc::Sender<()>,
+    #[cfg(unix)]
+    term: tokio::signal::unix::Signal,
+    #[cfg(unix)]
+    int: tokio::signal::unix::Signal,
+    #[cfg(windows)]
+    term: tokio::signal::windows::CtrlC,
+}
+
+impl StopSignal {
+    #[cfg(unix)]
+    fn new(shutdown_send: tokio::sync::mpsc::Sender<()>) -> anyhow::Result<Self> {
+        let term = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+            .context("failed to add signal handler for SIGTERM")?;
+        let int = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::interrupt())
+            .context("failed to add signal handler for SIGINT")?;
+        Ok(Self {
+            shutdown_send,
+            term,
+            int,
+        })
+    }
+
+    #[cfg(windows)]
+    fn new(shutdown_send: tokio::sync::mpsc::Sender<()>) -> anyhow::Result<Self> {
+        let term = tokio::signal::windows::ctrl_c()
+            .context("failed to add signal handler for ctrl+c")?;
+        Ok(Self {
+            shutdown_send,
+            term,
+        })
+    }
+
+    #[cfg(unix)]
+    async fn next(&mut self) -> bool {
+        tokio::select! {
+            _ = self.term.recv() => {
+            if self.shutdown_send.try_send(()).is_err() {
+                return true;
+            }
+        },
+        _ = self.int.recv() => {
+            if self.shutdown_send.try_send(()).is_err() {
+                return true;
+            }
+        }
+        }
+        false
+    }
+
+    #[cfg(windows)]
+    async fn next(&mut self) -> bool {
+        let _ = self.term.recv().await;
+        if self.shutdown_send.try_send(()).is_err() {
+            return true;
+        }
+        false
+    }
 }
