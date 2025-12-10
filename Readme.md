@@ -89,6 +89,15 @@ then enter the public key of the `p2termd`-peer to connect to, then press `conne
 Theoretically this should be usable on `linux`, `mac` and `windows`, though only the former two were tested
 (`linux`-host + `mac`-client and vice versa).
 
+Binaries are built for `linux` and `windows`, `mac` would need to be built from source, or by someone
+with a `mac`. They can be found under releases (soon) in this repo.
+
+## Building locally
+
+Install rust, [see here](https://rust-lang.org/tools/install/).
+
+`cargo b -p p2termd` or `cargo b -p p2term`
+
 ## Future improvements
 
 - File-sending would be cool, though iroh already has an implementation for that: [iroh sendme](https://www.iroh.computer/sendme).
