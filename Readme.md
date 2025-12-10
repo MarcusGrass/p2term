@@ -103,12 +103,13 @@ Some things to think about before using this.
 ### Security
 
 While the connection is end-to-end encrypted, and the pipe itself should be fine, there will always be a 
-risk of opening up a way to shell into a device. If running `p2term` without arguments, the only thing 
+risk in opening up a way to shell into a device. If running `p2term` without arguments, the only thing 
 protecting your machine is obscurity of the `public key`, and that's broadcasted as part of `iroh`'s DNS system.
 
 ### Avenues of abuse
 
-This could trivially be turned into malware, although that possibility exists with `iroh` in general.
+This could trivially be turned into malware, although that already possibility exists with `iroh`, 
+and software in general.
 
 # License
 
