@@ -97,9 +97,14 @@ async fn main() -> ExitCode {
 async fn start_connection(args: ConnectArgs) -> anyhow::Result<()> {
     let parsed = parse_args(&args)?;
     let server_handle = P2TermServerHandle::connect(parsed.secret_key, parsed.peer).await?;
+    #[cfg(unix)]
+    let term = std::env::var("TERM").ok();
+    #[cfg(not(unix))]
+    let term = None;
     let client_opt = ClientOpt {
         shell: args.shell,
         cwd: args.cwd,
+        term,
     };
     runtime::run(server_handle, &client_opt, ShellProxy).await
 }

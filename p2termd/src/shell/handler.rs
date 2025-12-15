@@ -26,7 +26,7 @@ impl ServerShellProxy for ShellProxyImpl {
             .as_deref()
             .unwrap_or(shell_cfg.default_shell.as_str());
         let (pty_write, pty_read, mut err_recv) =
-            subshell_pty_task(shell, client_opt.cwd.as_deref())?;
+            subshell_pty_task(shell, client_opt.cwd.as_deref(), client_opt.term.as_deref())?;
 
         let (input_res, output_res) = tokio::join!(
             proxy_child_stdin(pty_write, input_stream),
