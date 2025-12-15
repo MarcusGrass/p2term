@@ -5,7 +5,7 @@ use p2term_lib::client::server_handle::P2TermServerHandle;
 use p2term_lib::client::shell_proxy::ClientShellProxy;
 use p2term_lib::convert::HexConvert;
 use p2term_lib::error::unpack;
-use p2term_lib::proto::ClientOpt;
+use p2term_lib::proto::{ClientOpt, DEFAULT_TERM};
 use p2term_lib::streams::{ReadStream, WriteStream};
 use std::path::PathBuf;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -55,6 +55,8 @@ pub async fn start_connection(
     let opt = ClientOpt {
         shell: shell.map(std::string::ToString::to_string),
         cwd: cwd.map(PathBuf::from),
+        // I think this is legit for xterm.js, though not 100% sure
+        term: Some(DEFAULT_TERM.to_string()),
     };
     let (send, recv) = tokio::sync::mpsc::channel(128);
     wasm_bindgen_futures::spawn_local(async move {

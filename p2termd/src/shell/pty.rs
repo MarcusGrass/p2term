@@ -1,4 +1,5 @@
 use anyhow::Context;
+use p2term_lib::proto::DEFAULT_TERM;
 use portable_pty::{CommandBuilder, PtySize};
 use std::io::{Read, Write};
 use std::path::Path;
@@ -46,13 +47,17 @@ enum ShellMessage {
 pub fn subshell_pty_task(
     shell: &str,
     cwd: Option<&Path>,
+    term: Option<&str>,
 ) -> anyhow::Result<(
     PtyWriter,
     PtyReader,
     tokio::sync::mpsc::Receiver<anyhow::Error>,
 )> {
     let pty_sys = portable_pty::native_pty_system();
+    let term = term.unwrap_or(DEFAULT_TERM);
     let mut cmd = CommandBuilder::new(shell);
+    cmd.env("TERM", term);
+    cmd.arg("-l");
     if let Some(cwd) = cwd {
         cmd.cwd(cwd);
     }
