@@ -43,4 +43,5 @@ package_deb "p2term" "$X86_MUSL" "amd64" "p2term-x86_64-linux" ""
 package_deb "p2term" "$AARCH64_MUSL" "arm64" "p2term-aarch64-linux" ""
 
 package "p2termd" "$X86_WINDOWS" "amd64" "p2termd" ".exe"
-package "p2term" "$X86_WINDOWS" "amd64" "p2term" ".exe"
+# Can't package client for windows before solving pty stuff
+# package "p2term" "$X86_WINDOWS" "amd64" "p2term" ".exe"
